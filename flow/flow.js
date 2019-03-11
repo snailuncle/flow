@@ -16,7 +16,9 @@ function Work(name, readyProps, go, successProps) {
     var props = this.readyProps
     return hasProps(props)
   }
-  this.go = go || function () {toastLog(this.name)}
+  this.go = go || function () {
+    toastLog(this.name)
+  }
   this.successCheck = function () {
     var props = this.successProps
     return hasProps(props)
@@ -49,7 +51,7 @@ var flow = {
   flow: Flow,
   work: Work,
   prop: Prop,
-  failure:Failure
+  failure: Failure
 }
 module.exports = flow
 //========================================================================================FlowFlowFlowFlowFlowFlow=============================================================================================================
@@ -58,24 +60,18 @@ Flow.prototype.add = function () {
   var nextWorks = arguments
   for (var i = 0; i < nextWorks.length; i++) {
     var work = nextWorks[i]
-    // log(work)
-    if(work.type=="Work"){
+    if (work.type == "Work") {
       works.push(work)
-    }else if(work.type=="Flow"){
+    } else if (work.type == "Flow") {
       works.push(work.works)
     }
   }
 }
-//添加的工作中,可能有flow,work,或者[work1,work2,...]
 //展开works
 Flow.prototype.spread = function () {
   var newWorks = []
   var works = this.works
-
   newWorks = _.flattenDeep(works);
-
-
-
   this.works = newWorks
 }
 
@@ -189,20 +185,6 @@ function getObjType(obj) {
   result = result.match(/ \w+/)[0]
   result = result.replace(/ /g, '')
   return result
-}
-
-function getRndColor() {
-  var a, r, g, b;
-  a = Math.floor(0), r = Math.floor(rnd_0_255()), g = Math.floor(rnd_0_255()), b = Math.floor(rnd_0_255());
-  // var 反色 = -1 - colors.argb(0, r, g, b);
-  var color = colors.argb(0, r, g, b);
-  color = colors.toString(color)
-  return color
-}
-
-function rnd_0_255() {
-  var r = parseInt(255 * Math.random())
-  return r
 }
 
 function exist(propFeature, searchCount, intervalTime) {
