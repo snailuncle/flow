@@ -4,6 +4,12 @@ function Flow(name, works) {
   this.name = name || 'unknownFlow'
   this.type = 'Flow'
   this.works = works || []
+  if (this.works.length > 0) {
+    for (var i = 0; i < this.works.length; i++) {
+      var work = this.works[i]
+      work.flow = this
+    }
+  }
 }
 
 function Work(name, readyProps, go, successProps) {
@@ -14,14 +20,26 @@ function Work(name, readyProps, go, successProps) {
   this.allFailures = {}
   this.readyCheck = function () {
     var props = this.readyProps
-    return hasProps(props)
+    try {
+      return hasProps(props)
+    } catch (e) {
+      log(e)
+      var propName = e
+      throw this.name + 'readyCheck' + '-' + propName
+    }
   }
   this.go = go || function () {
-    toastLog(this.name)
+    toastLog(this.name + ' go')
   }
   this.successCheck = function () {
     var props = this.successProps
-    return hasProps(props)
+    try {
+      return hasProps(props)
+    } catch (e) {
+      log(e)
+      var propName = e
+      throw this.name + 'successCheck' + '-' + propName
+    }
   }
 }
 
@@ -31,17 +49,17 @@ function Prop(name, feature, check) {
   this.feature = feature || {}
   this.check = function () {
     try {
-      check || exist
+      return (check ? check() : exist(this.feature))
     } catch (e) {
       log(e)
-      throw this.name + "-->error"
+      var propName = e
+      throw propName
     }
   }
 }
 
-function Failure(prop, handle) {
-  this.prop = prop
-  this.name = prop.name || "unknownFailure"
+function Failure(name, handle) {
+  this.name = name || "unknownFailure"
   this.type = 'Failure'
   this.handle = handle || function () {
     throw this.name
@@ -60,6 +78,7 @@ Flow.prototype.add = function () {
   var nextWorks = arguments
   for (var i = 0; i < nextWorks.length; i++) {
     var work = nextWorks[i]
+    work.flow = this
     if (work.type == "Work") {
       works.push(work)
     } else if (work.type == "Flow") {
@@ -92,6 +111,10 @@ function spreadFlow(flow, newWork) {
 }
 Flow.prototype.set = function (works) {
   this.works = works
+  for (var i = 0; i < works.length; i++) {
+    var work = works[i]
+    work.flow = this
+  }
 }
 Flow.prototype.go = function () {
   this.spread()
@@ -99,13 +122,31 @@ Flow.prototype.go = function () {
   for (var i = 0; i < works.length; i++) {
     var work = works[i]
     try {
+      log("before " + work.name + ".ready()")
       work.ready()
+      log("after " + work.name + ".ready()")
+      log("before " + work.name + ".go()")
       work.go()
+      log("after " + work.name + ".go()")
+      log("before " + work.name + ".isSuccessful()")
       work.isSuccessful()
+      log("after " + work.name + ".isSuccessful()")
     } catch (e) {
-      log(e)
-      work.fail(e)
+      try {
+        work.fail(this.name + '-' + e)
+      } catch (e) {
+        log(e)
+        throw e
+      }
     }
+    // try {
+    //   work.ready()
+    //   work.go()
+    //   work.isSuccessful()
+    // } catch (e) {
+    //   log(e)
+    //   work.fail(e)
+    // }
   }
 }
 //=======================================================================================WorkWorkWorkWorkWorkWork=================================================================================================================
@@ -117,12 +158,17 @@ Work.prototype.isSuccessful = function () {
 }
 Work.prototype.addFailure = function (failure) {
   var name = failure.name
+  failure.work = this
   this.allFailures[name] = failure
 }
 Work.prototype.fail = function (e) {
+  log('work-->' + this.name + '的方法fail接收一个参数' + e)
   var allFailures = this.allFailures
+  log('work-->' + this.name + 'allFailures=')
+  log(allFailures)
   for (var failureName in allFailures) {
     if (failureName == e.toString()) {
+      log('找到了一样的failureName', failureName)
       var failure = allFailures[failureName]
       failure.handle()
       return;
@@ -136,6 +182,9 @@ function hasProps(props) {
   for (var i = 0; i < props.length; i++) {
     var prop = props[i]
     if (!prop.check()) {
+      log('下面这个控件没找到')
+      log(prop)
+      throw prop.name
       return false
     }
   }
@@ -144,8 +193,8 @@ function hasProps(props) {
 Work.prototype.setReadyProps = function (readyProps) {
   this.readyProps = readyProps
 }
-Work.prototype.setGo = function (go) {
-  this.go = go
+Work.prototype.setGo = function (action) {
+  this.go = action
 }
 Work.prototype.setSuccessProps = function (successProps) {
   this.successProps = successProps
@@ -163,11 +212,11 @@ Prop.prototype.setFeature = function (feature) {
 Prop.prototype.setCheck = function (check) {
   this.check = function () {
     try {
-      check || exist
+      return (check ? check() : exist(this.feature))
     } catch (e) {
       log(e)
-      log(this.name + "-->error")
-      throw this.name
+      var propName = e
+      throw propName
     }
   }
 }
@@ -188,12 +237,14 @@ function getObjType(obj) {
 }
 
 function exist(propFeature, searchCount, intervalTime) {
-  var searchCount = searchCount || 3
+  var searchCount = searchCount || 10
   var intervalTime = intervalTime || 1000
   //propFeature是一个json格式
   //desc,text,id,boundsInside,bounds,boundsContains
   if (!(getObjType(propFeature) == "Object")) {
-    log('正确的对象例子')
+    log('你传入的propFeature是')
+    log(propFeature)
+    log('propFeature--控件特征描述是一个对象,正确的对象例子')
     var obj = {
       k1: "v1",
       k2: "v2",
