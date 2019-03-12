@@ -65,23 +65,24 @@ function 发消息Go() {
     }
   }
 }
-打开QQ.setGo(打开QQGo)
-点击某个群.setGo(点击某个群Go)
-发消息.setGo(发消息Go)
+打开QQ.setAction(打开QQGo)
+点击某个群.setAction(点击某个群Go)
+发消息.setAction(发消息Go)
 //第三:　把设计好的工作添加到工作流中
 qq群发消息工作流.add(打开QQ, 点击某个群, 发消息)
 //第四: 处理可能发生的异常
 //比如发消息失败了怎么办?这里我们设置为按三次次返回键,重新执行工作流,给失败的工作,起一个名字failureName,和一个处理方式failureHandle
 var failureName = null
 var failureHandle = null
-failureName = 'qq群发消息-打开QQsuccessCheck-消息'
+//格式 工作名-方法名-控件名
+failureName = '打开QQ-successCheck-消息'
 failureHandle = function () {
   var work = this.work
   log('本次執行異常的工作是')
   log(work)
   work.go()
 }
-failureName = 'qq群发消息-点击某个群successCheck-发送'
+failureName = '点击某个群-successCheck-发送'
 failureHandle = function () {
   var work = this.work
   log('本次執行異常的工作是')
@@ -90,7 +91,7 @@ failureHandle = function () {
 }
 var 点击某个群failure = new Failure(failureName, failureHandle)
 点击某个群.addFailure(点击某个群failure)
-failureName = 'qq群发消息-发消息successCheck-自定义消息'
+failureName = '发消息-successCheck-自定义消息'
 failureHandle = function () {
   var work = this.work
   log('本次執行異常的工作是')

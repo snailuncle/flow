@@ -12,7 +12,7 @@ function Flow(name, works) {
   }
 }
 
-function Work(name, readyProps, go, successProps) {
+function Work(name, readyProps, action, successProps) {
   this.name = name || "unknownWork"
   this.type = 'Work'
   this.readyProps = readyProps || []
@@ -25,11 +25,11 @@ function Work(name, readyProps, go, successProps) {
     } catch (e) {
       log(e)
       var propName = e
-      throw this.name + 'readyCheck' + '-' + propName
+      throw this.name + '-' + 'readyCheck' + '-' + propName
     }
   }
-  this.go = go || function () {
-    toastLog(this.name + ' go')
+  this.action = action || function () {
+    toastLog(this.name + ' action')
   }
   this.successCheck = function () {
     var props = this.successProps
@@ -38,7 +38,7 @@ function Work(name, readyProps, go, successProps) {
     } catch (e) {
       log(e)
       var propName = e
-      throw this.name + 'successCheck' + '-' + propName
+      throw this.name + '-' + 'successCheck' + '-' + propName
     }
   }
 }
@@ -121,37 +121,29 @@ Flow.prototype.go = function () {
   var works = this.works
   for (var i = 0; i < works.length; i++) {
     var work = works[i]
-    try {
-      log("before " + work.name + ".ready()")
-      work.ready()
-      log("after " + work.name + ".ready()")
-      log("before " + work.name + ".go()")
-      work.go()
-      log("after " + work.name + ".go()")
-      log("before " + work.name + ".isSuccessful()")
-      work.isSuccessful()
-      log("after " + work.name + ".isSuccessful()")
-    } catch (e) {
-      try {
-        work.fail(this.name + '-' + e)
-      } catch (e) {
-        log(e)
-        throw e
-      }
-    }
-    // try {
-    //   work.ready()
-    //   work.go()
-    //   work.isSuccessful()
-    // } catch (e) {
-    //   log(e)
-    //   work.fail(e)
-    // }
+    work.go()
   }
 }
 //=======================================================================================WorkWorkWorkWorkWorkWork=================================================================================================================
 Work.prototype.ready = function () {
   return this.readyCheck()
+}
+Work.prototype.go = function () {
+  var work = this
+  try {
+    log("before " + work.name + ".ready()")
+    work.ready()
+    log("after " + work.name + ".ready()")
+    log("before " + work.name + ".go()")
+    work.action()
+    log("after " + work.name + ".go()")
+    log("before " + work.name + ".isSuccessful()")
+    work.isSuccessful()
+    log("after " + work.name + ".isSuccessful()")
+  } catch (e) {
+    log(e)
+    work.fail(e)
+  }
 }
 Work.prototype.isSuccessful = function () {
   return this.successCheck()
@@ -162,7 +154,9 @@ Work.prototype.addFailure = function (failure) {
   this.allFailures[name] = failure
 }
 Work.prototype.fail = function (e) {
-  log('work-->' + this.name + '的方法fail接收一个参数' + e)
+  log('work-->' + this.name + 'fail')
+  log('fail接收一个参数: 如下')
+  log(e)
   var allFailures = this.allFailures
   log('work-->' + this.name + 'allFailures=')
   log(allFailures)
@@ -193,8 +187,8 @@ function hasProps(props) {
 Work.prototype.setReadyProps = function (readyProps) {
   this.readyProps = readyProps
 }
-Work.prototype.setGo = function (action) {
-  this.go = action
+Work.prototype.setAction = function (action) {
+  this.action = action
 }
 Work.prototype.setSuccessProps = function (successProps) {
   this.successProps = successProps
@@ -237,7 +231,7 @@ function getObjType(obj) {
 }
 
 function exist(propFeature, searchCount, intervalTime) {
-  var searchCount = searchCount || 10
+  var searchCount = searchCount || 3
   var intervalTime = intervalTime || 1000
   //propFeature是一个json格式
   //desc,text,id,boundsInside,bounds,boundsContains
